@@ -1,5 +1,5 @@
 {
-  "name": "prepend-file",
+  "name": "prepend-file-promise",
   "version": "1.3.1",
   "description": "Prepend data to a file, creating the file if it not yet exists.",
   "license": "MIT",

@@ -2,31 +2,7 @@ import * as fs from 'fs';
 import * as util from 'util';
 var tmp = require('tmp');
 
-var DEBUG = process.env.NODE_DEBUG && /fs/.test(process.env.NODE_DEBUG);
-
-function rethrow() {
-  // Only enable in debug mode. A backtrace uses ~1000 bytes of heap space and is fairly slow to generate.
-  if (DEBUG) {
-    var backtrace = new Error();
-    return function(err) {
-      if (err) {
-        backtrace.stack = err.name + ': ' + err.message +
-          backtrace.stack.substr(backtrace.name.length);
-        err = backtrace;
-        throw err;
-      }
-    };
-  }
-
-  return function(err) {
-    if (err) {
-      throw err; // Forgot a callback but don't know where? Use NODE_DEBUG=fs
-    }
-  };
-}
-
 module.exports = async function prependFile(path, data, options) {
-
   if (typeof options === 'function' || !options) {
     options = {
       encoding: 'utf8',
