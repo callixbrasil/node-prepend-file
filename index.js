@@ -1,6 +1,5 @@
-'use strict';
-var fs = require('fs');
-var util = require('util');
+import * as fs from 'fs';
+import * as util from 'util';
 var tmp = require('tmp');
 
 var DEBUG = process.env.NODE_DEBUG && /fs/.test(process.env.NODE_DEBUG);
@@ -26,12 +25,7 @@ function rethrow() {
   };
 }
 
-function maybeCallback(callback) {
-  return typeof callback === 'function' ? callback : rethrow();
-}
-
-module.exports = function prependFile(path, data, options) {
-  var callback = maybeCallback(arguments[arguments.length - 1]);
+module.exports = async function prependFile(path, data, options) {
 
   if (typeof options === 'function' || !options) {
     options = {
@@ -54,53 +48,39 @@ module.exports = function prependFile(path, data, options) {
   };
 
   // a temp file is written even if dist file does not exist. PR welcome for better implementation.
-  tmp
-    .file(function (err, tempFilePath, fd, cleanupCallback) {
-      if (err) {
-        callback(err);
-        return;
-      }
+  return new Promise((resolve, reject) => {
+    tmp.file(function (err, tempFilePath, fd, cleanupCallback) {
+        if (err) reject(err);
 
-      fs.writeFile(tempFilePath, data, options, function (err) {
-        if (err) {
-          callback(err);
-          return;
-        }
+        fs.writeFile(tempFilePath, data, options, function (err) {
+          if (err) reject(err);
 
-        fs.createReadStream(path, options)
-          .on('error', function(err) {
-            if (err.code === 'ENOENT' /*file does not exist*/) {
-              fs.writeFile(path, data, options, function (err) {
-                if (err) {
-                  callback(err);
-                } else {
-                  callback();
-                }
-              });
-            } else {
-              callback(err);
-            }
-          })
-          .pipe(fs.createWriteStream(tempFilePath, appendOptions))
-          .on('error', function(err) {
-            callback(err);
-          })
-          .on('finish', function() {
-            fs.createReadStream(tempFilePath, options)
-              .on('error', function(err) {
-                callback(err);
-              })
-              .pipe(fs.createWriteStream(path, options))
-              .on('error', function(err) {
-                callback(err);
-              })
-              .on('finish', function() {
-                cleanupCallback();
-                callback();
-              });
-          });
+          fs.createReadStream(path, options)
+            .on('error', function(err) {
+              if (err.code === 'ENOENT' /*file does not exist*/) {
+                fs.writeFile(path, data, options, function (err) {
+                  if (err) reject(err);
+                  resolve();
+                });
+              } 
+              
+              reject(err);
+            })
+            .pipe(fs.createWriteStream(tempFilePath, appendOptions))
+            .on('error', reject)
+            .on('finish', function() {
+              fs.createReadStream(tempFilePath, options)
+              .on('error', reject)
+                .pipe(fs.createWriteStream(path, options))
+                .on('error', reject)
+                .on('finish', function() {
+                  cleanupCallback();
+                  resolve();
+                });
+            });
+        });
       });
-    });
+  })
 };
 
 module.exports.sync = function sync(path, data, options) {

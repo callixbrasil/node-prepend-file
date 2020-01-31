@@ -33,6 +33,8 @@
     "mocha": "*"
   },
   "dependencies": {
+    "@types/node": "^13.7.0",
+    "stream-promise": "^3.2.0",
     "tmp": "0.0.31"
   }
 }
