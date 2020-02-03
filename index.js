@@ -1,8 +1,8 @@
-import * as fs from 'fs';
-import * as util from 'util';
+var fs = require('fs');
+var util = require('util');
 var tmp = require('tmp');
 
-module.exports = async function prependFile(path, data, options) {
+module.exports.prependFile = async function (path, data, options) {
   if (typeof options === 'function' || !options) {
     options = {
       encoding: 'utf8',
